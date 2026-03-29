@@ -58,22 +58,30 @@ export function BibleProvider({ children }: { children: ReactNode }) {
   // Load data from localStorage on mount
   useEffect(() => {
     try {
+      // Load highlights
       const savedHighlights = localStorage.getItem('bible_highlights');
       if (savedHighlights) {
-        const parsed = JSON.parse(savedHighlights);
+        const parsed = JSON.parse(savedHighlights) as Record<string, Highlight>;
         setHighlights(new Map(Object.entries(parsed)));
       }
 
+      // Load notes
       const savedNotes = localStorage.getItem('bible_notes');
       if (savedNotes) {
-        setNotes(JSON.parse(savedNotes));
+        try {
+          setNotes(JSON.parse(savedNotes));
+        } catch {
+          setNotes([]);
+        }
       }
 
+      // Load reading progress
       const savedProgress = localStorage.getItem('reading_progress');
       if (savedProgress) {
         setReadingProgress(JSON.parse(savedProgress));
       }
 
+      // Load dark mode preference
       const savedDarkMode = localStorage.getItem('dark_mode');
       if (savedDarkMode) {
         setDarkMode(JSON.parse(savedDarkMode));
@@ -108,7 +116,8 @@ export function BibleProvider({ children }: { children: ReactNode }) {
 
   const addHighlight = (verseId: string, color: string) => {
     const newHighlights = new Map(highlights);
-    newHighlights.set(verseId, { verseId, color, timestamp: Date.now() });
+    const newHighlight: Highlight = { verseId, color, timestamp: Date.now() };
+newHighlights.set(verseId, newHighlight);
     setHighlights(newHighlights);
     localStorage.setItem('bible_highlights', JSON.stringify(Object.fromEntries(newHighlights)));
   };
@@ -127,23 +136,32 @@ export function BibleProvider({ children }: { children: ReactNode }) {
       text,
       timestamp: Date.now(),
     };
-    const newNotes = [...notes, newNote];
-    setNotes(newNotes);
-    localStorage.setItem('bible_notes', JSON.stringify(newNotes));
+  
+    setNotes(prev => {
+      const updated = [...prev, newNote];
+      localStorage.setItem('bible_notes', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const updateNote = (noteId: string, text: string) => {
-    const newNotes = notes.map(note =>
-      note.id === noteId ? { ...note, text, timestamp: Date.now() } : note
-    );
-    setNotes(newNotes);
-    localStorage.setItem('bible_notes', JSON.stringify(newNotes));
+    setNotes(prev => {
+      const updated = prev.map(note =>
+        note.id === noteId
+          ? { ...note, text, timestamp: Date.now() }
+          : note
+      );
+      localStorage.setItem('bible_notes', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const deleteNote = (noteId: string) => {
-    const newNotes = notes.filter(note => note.id !== noteId);
-    setNotes(newNotes);
-    localStorage.setItem('bible_notes', JSON.stringify(newNotes));
+    setNotes(prev => {
+      const updated = prev.filter(note => note.id !== noteId);
+      localStorage.setItem('bible_notes', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const updateReadingProgress = useCallback((book: string, chapter: number, verse: number) => {

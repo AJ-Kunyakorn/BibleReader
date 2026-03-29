@@ -1,43 +1,76 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { useBible } from "../contexts/BibleContext";
-import { john3Verses, bibleBooks } from "../data/bibleData";
-import { Search as SearchIcon, X, Book, TrendingUp } from "lucide-react";
+import { bibleBooks, VerseData } from "../data/bibleData";
+import bibleJson from "../data/bible.json";
+import {
+  Search as SearchIcon,
+  X,
+  Book,
+  TrendingUp,
+} from "lucide-react";
 import { BottomNav } from "./BottomNav";
 import { OfflineBanner } from "./OfflineBanner";
 
 export function Search() {
   const navigate = useNavigate();
   const { darkMode } = useBible();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<typeof john3Verses>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<
+    VerseData[]
+  >([]);
   const [isSearching, setIsSearching] = useState(false);
 
   // Popular searches
   const popularSearches = [
-    'Love',
-    'Faith',
-    'Hope',
-    'God so loved',
-    'Jesus',
+    "Love",
+    "Faith",
+    "Hope",
+    "God so loved",
+    "Jesus",
   ];
 
-  useEffect(() => {
-    if (searchQuery.trim().length < 2) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
+  
+
+
+useEffect(() => {
+  if (searchQuery.trim().length < 2) {
+    setSearchResults([]);
+    setIsSearching(false);
+    return;
+  }
+
 
     setIsSearching(true);
-    
-    // Simulate search delay (in real app, this would be an API call)
+
+    // Simulate search delay for better UX
     const timer = setTimeout(() => {
-      const results = john3Verses.filter(verse =>
-        verse.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        verse.book.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setSearchResults(results);
+      const lower = searchQuery.toLowerCase();
+      const matches: VerseData[] = [];
+      
+      bibleJson.forEach((book: any) => {
+        const bookInfo = bibleBooks.find(
+            (b) => b.id === book.abbrev
+        );
+        book.chapters.forEach(
+          (chapter: string[], cIndex: number) => {
+            chapter.forEach((verse: string, vIndex: number) => {
+              if (verse.toLowerCase().includes(lower)) {
+                matches.push({
+                  id: `${book.abbrev}-${cIndex + 1}-${vIndex + 1}`,
+                  book: book.abbrev,
+                  bookName: bookInfo?.name || book.name,
+                  chapter: cIndex + 1,
+                  verse: vIndex + 1,
+                  text: verse,
+                });
+              }
+            });
+          },
+        );
+      });
+
+      setSearchResults(matches.slice(0, 50));
       setIsSearching(false);
     }, 300);
 
@@ -45,7 +78,7 @@ export function Search() {
   }, [searchQuery]);
 
   const handleClearSearch = () => {
-    setSearchQuery('');
+    setSearchQuery("");
     setSearchResults([]);
   };
 
@@ -54,7 +87,9 @@ export function Search() {
   };
 
   return (
-    <div className={`min-h-screen pb-20 ${darkMode ? 'dark' : ''}`}>
+    <div
+      className={`min-h-screen pb-20 ${darkMode ? "dark" : ""}`}
+    >
       <div className="bg-white dark:bg-gray-950 min-h-screen">
         <OfflineBanner />
 
@@ -90,7 +125,9 @@ export function Search() {
               <section className="mb-8">
                 <div className="flex items-center gap-2 mb-4">
                   <TrendingUp className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Popular Searches</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Popular Searches
+                  </h2>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {popularSearches.map((query) => (
@@ -109,17 +146,25 @@ export function Search() {
               <section>
                 <div className="flex items-center gap-2 mb-4">
                   <Book className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Browse Books</h2>
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Browse Books
+                  </h2>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {bibleBooks.slice(0, 8).map((book) => (
                     <button
                       key={book.id}
-                      onClick={() => navigate('/read')}
+                      onClick={() =>
+                        navigate(`/read/${book.id}/1`)
+                      }
                       className="p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-left hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all"
                     >
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">{book.name}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{book.chapters} chapters</p>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
+                        {book.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {book.chapters} chapters
+                      </p>
                     </button>
                   ))}
                 </div>
@@ -133,22 +178,32 @@ export function Search() {
               {isSearching ? (
                 <div className="text-center py-12">
                   <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
-                  <p className="text-gray-500 dark:text-gray-400 mt-4">Searching...</p>
+                  <p className="text-gray-500 dark:text-gray-400 mt-4">
+                    Searching...
+                  </p>
                 </div>
               ) : searchResults.length > 0 ? (
                 <>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Found {searchResults.length} {searchResults.length === 1 ? 'result' : 'results'} for "{searchQuery}"
+                    Found {searchResults.length}{" "}
+                    {searchResults.length === 1
+                      ? "result"
+                      : "results"}{" "}
+                    for "{searchQuery}"
                   </p>
                   <div className="space-y-3">
                     {searchResults.map((verse) => (
                       <div
                         key={verse.id}
-                        onClick={() => navigate('/read')}
+                        onClick={() =>
+                          navigate(
+                            `/read/${verse.book}/${verse.chapter}`,
+                          )
+                        }
                         className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all cursor-pointer"
                       >
                         <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
-                          {verse.book} {verse.chapter}:{verse.verse}
+                          {verse.bookName || verse.book} {verse.chapter}:{verse.verse}
                         </p>
                         <p className="text-gray-900 dark:text-gray-100 leading-relaxed">
                           {verse.text}
@@ -160,7 +215,9 @@ export function Search() {
               ) : (
                 <div className="text-center py-12">
                   <SearchIcon className="w-12 h-12 text-gray-300 dark:text-gray-700 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No Results Found</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No Results Found
+                  </h3>
                   <p className="text-gray-600 dark:text-gray-400">
                     Try searching for different keywords
                   </p>

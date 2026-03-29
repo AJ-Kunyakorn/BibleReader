@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { Home } from "./components/Home";
 import { BibleReading } from "./components/BibleReading";
 import { Highlights } from "./components/Highlights";
@@ -12,7 +12,11 @@ export const router = createBrowserRouter([
     Component: Home,
   },
   {
-    path: "/read",
+  path: "/read",
+    element: <Navigate to="/read/gn/1" replace />,
+  },
+  {
+    path: "/read/:bookId/:chapter/:verse?",
     Component: BibleReading,
   },
   {

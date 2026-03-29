@@ -1,0 +1,19 @@
+# sys file
+*.log
+*.tmp
+
+# node_module folder
+node_modules/
+
+# build / dist folder
+build/
+dist/
+
+# environment file for sure
+.env
+
+# IDE / Editor files auto add for safe
+.vscode/
+.idea/
+*.suo
+*.swp

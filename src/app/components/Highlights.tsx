@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router";
 import { useBible } from "../contexts/BibleContext";
-import { john3Verses } from "../data/bibleData";
+import { getVerseById } from "../data/bibleData";
 import { ChevronLeft, Trash2, Highlighter as HighlighterIcon } from "lucide-react";
 import { BottomNav } from "./BottomNav";
 import { OfflineBanner } from "./OfflineBanner";
@@ -9,11 +9,28 @@ export function Highlights() {
   const navigate = useNavigate();
   const { highlights, removeHighlight, darkMode } = useBible();
 
-  // Get actual highlighted verses
-  const highlightedVerses = Array.from(highlights.values()).map(highlight => {
-    const verse = john3Verses.find(v => v.id === highlight.verseId);
-    return { ...highlight, verse };
-  }).filter(h => h.verse);
+  const colorClasses = {
+    yellow: "bg-yellow-100 dark:bg-yellow-300/50 border-yellow-500 text-yellow-700",
+    blue: "bg-blue-100 dark:bg-blue-300/50 border-blue-500 text-blue-700",
+    green: "bg-green-100 dark:bg-green-300/50 border-green-500 text-green-700",
+    pink: "bg-pink-100 dark:bg-pink-300/50 border-pink-500 text-pink-700",
+  };
+
+  // Get actual highlighted verses from the entire Bible
+  const highlightedVerses = Array.from(highlights.entries()).map(([verseId, data]) => {
+    const verse = getVerseById(verseId);
+    return {
+      verseId,
+      verse,
+      color: typeof data === 'string' ? data : data.color,
+      timestamp: typeof data === 'object' && data.timestamp ? data.timestamp : Date.now()
+    };
+  }).filter((h): h is {
+  verseId: string;
+  verse: NonNullable<typeof h.verse>;
+  color: string;
+  timestamp: number;
+} => h.verse !== null); // Only show verses that were found
 
   return (
     <div className={`min-h-screen pb-20 ${darkMode ? 'dark' : ''}`}>
@@ -38,7 +55,7 @@ export function Highlights() {
           {highlightedVerses.length === 0 ? (
             /* Empty State */
             <div className="text-center py-16">
-              <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-yellow-100 dark:bg-yellow-300/50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <HighlighterIcon className="w-8 h-8 text-yellow-600 dark:text-yellow-500" />
               </div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">No Highlights Yet</h2>
@@ -46,7 +63,7 @@ export function Highlights() {
                 Start highlighting verses as you read to save them here
               </p>
               <button
-                onClick={() => navigate('/read')}
+                onClick={() => navigate(`/read/${verse!.book}/${verse!.chapter}`)}
                 className="bg-blue-600 dark:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
                 Start Reading
@@ -59,10 +76,11 @@ export function Highlights() {
                 {highlightedVerses.length} {highlightedVerses.length === 1 ? 'verse' : 'verses'} highlighted
               </p>
               
-              {highlightedVerses.map(({ verseId, verse, timestamp }) => (
+              {highlightedVerses.map(({ verseId, verse, timestamp, color }) => (
                 <div
                   key={verseId}
-                  className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 dark:border-yellow-600 rounded-lg p-4 shadow-sm"
+                  className={`${colorClasses[color] || colorClasses.yellow} border-l-4 rounded-lg p-4 shadow-sm`}
+                  /* className="bg-yellow-50 dark:bg-yellow-300/50 border-l-4 border-yellow-500 dark:border-yellow-600 rounded-lg p-4 shadow-sm" */
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">

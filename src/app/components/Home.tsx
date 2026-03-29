@@ -1,18 +1,30 @@
 import { useNavigate } from "react-router";
 import { useBible } from "../contexts/BibleContext";
-import { getDailyVerse } from "../data/bibleData";
+import { getVerseById, getDailyVerse, bibleBooks } from "../data/bibleData";
 import { BookOpen, Highlighter, FileText, Search, ArrowRight } from "lucide-react";
 import { BottomNav } from "./BottomNav";
 import { OfflineBanner } from "./OfflineBanner";
+import { getLastReading } from "../data/reading";
 
 export function Home() {
+  const lastReading = getLastReading();
+  const bookInfo = bibleBooks.find(
+    b => b.id === lastReading?.book
+  );
+  const bookName = bookInfo?.name ?? lastReading?.book;
   const navigate = useNavigate();
   const { readingProgress, highlights, notes, darkMode } = useBible();
   const dailyVerse = getDailyVerse();
 
-  const highlightCount = highlights.size;
-  const noteCount = notes.length;
+  
 
+function getValidNotes(notes) {
+  return notes.filter(n => getVerseById(n.verseId));
+}
+  const validNotes = getValidNotes(notes);
+  const highlightCount = highlights.size;
+    const noteCount = validNotes.length;
+  
   return (
     <div className={`min-h-screen pb-20 ${darkMode ? 'dark' : ''}`}>
       <div className="bg-white dark:bg-gray-950 min-h-screen">
@@ -37,17 +49,17 @@ export function Home() {
           </button>
 
           {/* Continue Reading Card */}
-          {readingProgress && (
+          {lastReading && (
             <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 border border-gray-100 dark:border-gray-700">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Continue Reading</h2>
                 <BookOpen className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
-                {readingProgress.book} {readingProgress.chapter}:{readingProgress.verse}
+                {bookName} {lastReading.chapter}
               </p>
               <button
-                onClick={() => navigate('/read')}
+                onClick={() => navigate(`/read/${lastReading.book}/${lastReading.chapter}`)}
                 className="w-full bg-blue-600 dark:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
               >
                 Continue Reading
@@ -57,25 +69,34 @@ export function Home() {
           )}
 
           {/* Daily Verse */}
-          <div className="mt-6 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-gray-800 dark:to-gray-800 rounded-xl shadow-md p-5 border border-amber-100 dark:border-gray-700">
+          <div>
+          <button
+            onClick={() =>
+              navigate(`/read/${dailyVerse.bookId}/${dailyVerse.chapter}/${dailyVerse.verse}`)
+            }
+            className="mt-6 w-full text-left bg-gradient-to-br from-orange-200 to-yellow-200/5 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-md p-5 border border-amber-100 dark:border-gray-700 hover:scale-[1.01] active:scale-95 transition"
+          >
             <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-400 mb-3 uppercase tracking-wide">
               Verse of the Day
             </h2>
+          
             <p className="text-gray-800 dark:text-gray-200 leading-relaxed mb-3">
               "{dailyVerse.text}"
             </p>
+          
             <p className="text-sm text-amber-700 dark:text-amber-500 font-medium">
-              {dailyVerse.book} {dailyVerse.chapter}:{dailyVerse.verse}
+              {dailyVerse.bookName} {dailyVerse.chapter}:{dailyVerse.verse}
             </p>
+          </button>
           </div>
 
           {/* Quick Actions */}
           <div className="mt-6 grid grid-cols-2 gap-4">
             <button
               onClick={() => navigate('/highlights')}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 text-left border border-gray-100 dark:border-gray-700 transition-transform active:scale-95"
+              className="bg-gradient-to-br from-gray-100 to-gray-0 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-md p-5 text-left border border-gray-100 dark:border-gray-700 transition-transform duration-1000 ease-out hover:scale-[1.08] active:scale-95"
             >
-              <div className="w-10 h-10 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-3">
+              <div className="w-10 h-10 bg-yellow-200/80 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mb-3">
                 <Highlighter className="w-5 h-5 text-yellow-600 dark:text-yellow-500" />
               </div>
               <h3 className="font-semibold text-gray-900 dark:text-white mb-1">Highlights</h3>
@@ -84,7 +105,7 @@ export function Home() {
 
             <button
               onClick={() => navigate('/notes')}
-              className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-5 text-left border border-gray-100 dark:border-gray-700 transition-transform active:scale-95"
+              className="bg-gradient-to-br from-gray-100 to-gray-0 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-md p-5 text-left border border-gray-100 dark:border-gray-700 transition-transform duration-1000 ease-out hover:scale-[1.08] active:scale-95"
             >
               <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mb-3">
                 <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
@@ -95,8 +116,8 @@ export function Home() {
           </div>
 
           {/* Start Reading CTA (if no reading progress) */}
-          {!readingProgress && (
-            <div className="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700 text-center">
+          {!lastReading && (
+            <div className="mt-6 bg-gradient-to-br from-gray-100 to-gray-0 dark:from-gray-800 dark:to-gray-700 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700 text-center">
               <BookOpen className="w-12 h-12 text-blue-600 dark:text-blue-400 mx-auto mb-3" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Start Your Journey</h3>
               <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
@@ -104,7 +125,7 @@ export function Home() {
               </p>
               <button
                 onClick={() => navigate('/read')}
-                className="bg-blue-600 dark:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                className="bg-blue-600 dark:bg-blue-700 text-white py-3 px-6 rounded-lg font-medium hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors transition-tranform duration-2000 ease-in ease-out hover:scale-[1.05]"
               >
                 Start Reading
               </button>

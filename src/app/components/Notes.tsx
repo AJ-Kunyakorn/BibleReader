@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { useBible } from "../contexts/BibleContext";
-import { john3Verses } from "../data/bibleData";
+import { getVerseById } from "../data/bibleData";
 import { ChevronLeft, Trash2, Edit2, FileText, X } from "lucide-react";
 import { BottomNav } from "./BottomNav";
 import { OfflineBanner } from "./OfflineBanner";
@@ -30,11 +30,10 @@ export function Notes() {
     setEditText('');
   };
 
-  // Get verse details for each note
-  const notesWithVerses = notes.map(note => {
-    const verse = john3Verses.find(v => v.id === note.verseId);
-    return { ...note, verse };
-  }).filter(n => n.verse);
+  // Filter notes ที่มี verse จริง
+  const validNotes = notes
+    .map(note => ({ ...note, verse: getVerseById(note.verseId) }))
+    .filter(n => n.verse !== null);
 
   return (
     <div className={`min-h-screen pb-20 ${darkMode ? 'dark' : ''}`}>
@@ -56,8 +55,7 @@ export function Notes() {
         </header>
 
         <main className="max-w-2xl mx-auto p-6">
-          {notesWithVerses.length === 0 ? (
-            /* Empty State */
+          {validNotes.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <FileText className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -74,18 +72,16 @@ export function Notes() {
               </button>
             </div>
           ) : (
-            /* Notes List */
             <div className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {notesWithVerses.length} {notesWithVerses.length === 1 ? 'note' : 'notes'}
+                {validNotes.length} {validNotes.length === 1 ? 'note' : 'notes'}
               </p>
-              
-              {notesWithVerses.map(({ id, verseId, text, timestamp, verse }) => (
+
+              {validNotes.map(({ id, verseId, text, timestamp, verse }) => (
                 <div
                   key={id}
                   className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm"
                 >
-                  {/* Verse Reference */}
                   <div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
                     <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
                       {verse!.book} {verse!.chapter}:{verse!.verse}
@@ -95,14 +91,12 @@ export function Notes() {
                     </p>
                   </div>
 
-                  {/* Note Content */}
                   <div className="mb-3">
                     <p className="text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-wrap">
                       {text}
                     </p>
                   </div>
 
-                  {/* Metadata and Actions */}
                   <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-800">
                     <p className="text-xs text-gray-500 dark:text-gray-500">
                       {new Date(timestamp).toLocaleDateString('en-US', { 
@@ -136,7 +130,6 @@ export function Notes() {
           )}
         </main>
 
-        {/* Edit Dialog */}
         {editingNote && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-t-2xl sm:rounded-2xl w-full max-w-md shadow-2xl">
